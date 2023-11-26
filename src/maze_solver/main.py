@@ -6,6 +6,7 @@ from maze import Maze
 def main():
     w = Window(600, 600, "The Magical Maze")
     maze = Maze(50, 50, 10, 10, 50, 50, w)
+    maze.solve()
     w.run()
 
 

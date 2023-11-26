@@ -31,7 +31,44 @@ class Maze:
         if self._win:
             self._draw_cells()
             self._break_entrance_and_exit()
-            self._break_walls_r(0,0)
+            self._break_walls_r(0, 0)
+
+    def solve(self):
+        self._reset_cells_visited()
+        return self._solve_r(0, 0)
+
+    def _solve_r(self, r, c):
+        self._cells[r][c].visited = True
+        if (r == len(self._cells) - 1) and (c == len(self._cells[0]) - 1):
+            return True
+
+        for r2, c2 in self.get_unvisited_neighbours(r, c):
+            if not self._can_move((r, c), (r2, c2)):
+                continue
+
+            self._cells[r][c].draw_move(self._cells[r2][c2])
+            if self._solve_r(r2, c2):
+                return True
+
+            self._cells[r][c].draw_move(self._cells[r2][c2], undo=True)
+
+        return False
+
+    def _can_move(self, cell_1, cell_2):
+        r, c = cell_1
+        r2, c2 = cell_2
+        cell_1 = self._cells[r][c]
+        cell_2 = self._cells[r2][c2]
+        if r < r2 and not (cell_1.bottom or cell_2.top):
+            return True
+        elif r > r2 and not (cell_1.top or cell_2.bottom):
+            return True
+        elif c < c2 and not (cell_1.right or cell_2.left):
+            return True
+        elif c > c2 and not (cell_1.left or cell_2.right):
+            return True
+        else:
+            return False
 
     def _reset_cells_visited(self):
         for row in self._cells:
@@ -52,7 +89,6 @@ class Maze:
             other_cell = self._cells[r2][c2]
 
             self._break_walls_between(current_cell, other_cell)
-            current_cell.draw_move(other_cell)
             self._break_walls_r(r2, c2)
 
     def _break_walls_between(self, cell_1, cell_2):
@@ -72,13 +108,18 @@ class Maze:
 
     def get_unvisited_neighbours(self, r, c):
         coords = [
-            (r-1, c),
-            (r, c+1),
-            (r+1, c),
-            (r, c-1),
+            (r, c - 1),
+            (r + 1, c),
+            (r, c + 1),
+            (r - 1, c),
         ]
-        return [(r, c) for r, c in coords if 0 <= r < len(self._cells) and 0 <= c < len(self._cells[0]) and not self._cells[r][c].visited]
-
+        return [
+            (r, c)
+            for r, c in coords
+            if 0 <= r < len(self._cells)
+            and 0 <= c < len(self._cells[0])
+            and not self._cells[r][c].visited
+        ]
 
     def _break_entrance_and_exit(self):
         self._cells[0][0].top = False
@@ -142,6 +183,8 @@ class Cell:
         line = Line((x, y), (x2, y2))
         self._win.draw_line(line, color)
 
+        self._animate()
+
     def draw(self):
         (x, y), (X, Y) = self._p1, self._p2
         walls = [
@@ -162,6 +205,9 @@ class Cell:
         for wall, exists in walls:
             self._win.draw_line(wall, color[exists])
 
+        self._animate()
+
+    def _animate(self):
         if self._win:
             self._win.redraw()
-            sleep(0.005)
+            sleep(0.001)
